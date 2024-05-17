@@ -1,22 +1,4 @@
-/* ------------------------------------------------------------------------
- * Created by: Tauseef Ahmad
- * Created on: 10 March, 2023
- *  
- * Tutorial: https://youtu.be/aNjkNmHRx4o
- * ------------------------------------------------------------------------
- * Download Resources
- * ------------------------------------------------------------------------
- * Preferences--> Aditional boards Manager URLs : 
- * For ESP8266 and NodeMCU - Board Version 2.6.3
- * http://arduino.esp8266.com/stable/package_esp8266com_index.json
- * ------------------------------------------------------------------------
- * HTTPS Redirect Library:
- * https://github.com/jbuszkie/HTTPSRedirect
- * Example Arduino/ESP8266 code to upload data to Google Sheets
- * Follow setup instructions found here:
- * https://github.com/StorageB/Google-Sheets-Logging
- * ------------------------------------------------------------------------*/
- 
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <SPI.h>
