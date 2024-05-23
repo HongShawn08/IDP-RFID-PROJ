@@ -9,6 +9,7 @@
 #include<LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 //---------------------------------------------------------------------------------------------------------
+//Acts as a value that remains constant to be applied whenever called for
 // Enter Google Script Deployment ID:
 const char *GScriptId = "ENTER_DEPLOYMENT_ID";
 //---------------------------------------------------------------------------------------------------------
@@ -30,13 +31,16 @@ HTTPSRedirect* client = nullptr;
 // Declare variables that will be published to Google Sheets
 String student_id;
 //------------------------------------------------------------
+//Similar to nodes, has value and a pointer. Similar to array in python 
 int blocks[] = {4,5,6,8,9};
 #define total_blocks  (sizeof(blocks) / sizeof(blocks[0]))
 //------------------------------------------------------------
+//RST_PIN refers to reset pin for Node MCU, SS_PIN is the unique code in the rfid card, BUZZER is the sound component 
 #define RST_PIN  0  //D3
 #define SS_PIN   2  //D4
 #define BUZZER   4  //D2
 //------------------------------------------------------------
+//Reciever checks if the unique identifier is valid and also wipes old unique identifier when a new pin is scanned. 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 MFRC522::MIFARE_Key key;  
 MFRC522::StatusCode status;
@@ -54,10 +58,13 @@ byte readBlockData[18];
 ****************************************************************************************************/
 void setup() {
   //----------------------------------------------------------
+  //Void is similar to "null," cancels out any output, this function connects to rfid reader, intializes LCD, connects to wifi
+  //Sets the data rate in bits per second (baud) for serial data transmission.
   Serial.begin(9600);        
   delay(10);
   Serial.println('\n');
   //----------------------------------------------------------
+  //Connects to/initializes connection. Similar to turning on bluetooth
   SPI.begin();
   //----------------------------------------------------------
   //initialize lcd screen
@@ -65,6 +72,7 @@ void setup() {
   // turn on the backlight
   lcd.backlight();
   lcd.clear();
+  //start writign text from (0,0) which is top left of LCD screen.
   lcd.setCursor(0,0); //col=0 row=0
   lcd.print("Connecting to");
   lcd.setCursor(0,1); //col=0 row=0
@@ -74,7 +82,7 @@ void setup() {
   WiFi.begin(ssid, password);             
   Serial.print("Connecting to ");
   Serial.print(ssid); Serial.println(" ...");
-  
+//every 1 second wifi is connected, print period to signal that wifi is working
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.print(".");
@@ -84,12 +92,14 @@ void setup() {
   Serial.print("IP address:\t");
   Serial.println(WiFi.localIP());
   //----------------------------------------------------------
-  // Use HTTPSRedirect class to create a new TLS connection
+  // Use HTTPSRedirect class to create a new secure connection
+  //creates a new secure connection everytime you run function "setup"
   client = new HTTPSRedirect(httpsPort);
   client->setInsecure();
   client->setPrintResponseBody(true);
   client->setContentTypeHeader("application/json");
   //----------------------------------------------------------
+  //connecting to google to send data to spreadsheet
   lcd.clear();
   lcd.setCursor(0,0); //col=0 row=0
   lcd.print("Connecting to");
@@ -105,6 +115,7 @@ void setup() {
   for(int i=0; i<5; i++){ 
     int retval = client->connect(host, httpsPort);
     //*************************************************
+    //Prints on LCD if TLS was connected
     if (retval == 1){
       flag = true;
       String msg = "Connected. OK";
@@ -134,6 +145,7 @@ void setup() {
     //____________________________________________
   }
   //----------------------------------------------------------
+  //deletes the HTTPSRedirect to save storage
   delete client;    // delete HTTPSRedirect object
   client = nullptr; // delete HTTPSRedirect object
   //----------------------------------------------------------
@@ -144,6 +156,7 @@ void setup() {
 ****************************************************************************************************/
 void loop() {
   //----------------------------------------------------------------
+  //First section of loop creates invisible folder to store any new RFID data coming in
   static bool flag = false;
   if (!flag){
     client = new HTTPSRedirect(httpsPort);
@@ -152,10 +165,12 @@ void loop() {
     client->setPrintResponseBody(true);
     client->setContentTypeHeader("application/json");
   }
+//If the client does not equal null (has data stored), connect to the secure TLS connection
   if (client != nullptr){
     if (!client->connected())
       {client->connect(host, httpsPort);}
   }
+  //if flag never equals true (meaning the folder was never made when it was supposed to), call error
   else{Serial.println("Error creating client object!");}
   //----------------------------------------------------------------
   lcd.clear();
@@ -174,52 +189,31 @@ void loop() {
   Serial.println(F("Reading last data from RFID..."));  
   //----------------------------------------------------------------
   String values = "", data;
-  /*
-  //creating payload - method 1
-  //----------------------------------------------------------------
-  ReadDataFromBlock(blocks[0], readBlockData); //student id
-  data = String((char*)readBlockData); data.trim();
-  student_id = data;
-  //----------------------------------------------------------------
-  ReadDataFromBlock(blocks[1], readBlockData); //first name
-  data = String((char*)readBlockData); data.trim();
-  first_name = data;
-  //----------------------------------------------------------------
-  ReadDataFromBlock(blocks[2], readBlockData); //last name
-  data = String((char*)readBlockData); data.trim();
-  last_name = data;
-  //----------------------------------------------------------------
-  ReadDataFromBlock(blocks[3], readBlockData); //phone number
-  data = String((char*)readBlockData); data.trim();
-  phone_number = data;
-  //----------------------------------------------------------------
-  ReadDataFromBlock(blocks[4], readBlockData); //address
-  data = String((char*)readBlockData); data.trim();
-  address = data; data = "";
-  //----------------------------------------------------------------
-  values = "\"" + student_id + ",";
-  values += first_name + ",";
-  values += last_name + ",";
-  values += phone_number + ",";
-  values += address + "\"}";
-  //----------------------------------------------------------------*/
+ //-----------------------------------------------------------------
+  
   //creating payload - method 2 - More efficient
+  //Purpose of this part of code is to convert the blocks data into the actual student ID which will eventually be stored in the payload.
+  
+//------------------------------------------------------------------------------------------------------------------------------------------
+  
+  //byte is a data type that denotes size in memory
+  //This loop takes data stored within the block one by one in order of the block, and puts it into the payload.
+  //ex: first time: i=0. Second time: i=1. Third time: i=2
+  //Because C++ is 0-indexed, this for loop will include all data in the blocks even if the loop runs to LESS THAN the total amount of blocks
   for (byte i = 0; i < total_blocks; i++) {
-    ReadDataFromBlock(blocks[i], readBlockData);
-    //*************************************************
+    ReadDataFromBlock(blocks[i], readBlockData); 
     if(i == 0){
+      //forcing block data into string, data is the result of that
       data = String((char*)readBlockData);
       data.trim();
       student_id = data;
       values = "\"" + data + ",";
     }
-    //*************************************************
     else if(i == total_blocks-1){
       data = String((char*)readBlockData);
       data.trim();
       values += data + "\"}";
     }
-    //*************************************************
     else{
       data = String((char*)readBlockData);
       data.trim();
@@ -227,7 +221,7 @@ void loop() {
     }
   }
   //----------------------------------------------------------------
-  // Create json object string to send to Google Sheets
+  // Create json object string to send to Google Sheets (bascially makes the payload into a json file)
   // values = "\"" + value0 + "," + value1 + "," + value2 + "\"}"
   payload = payload_base + values;
   //----------------------------------------------------------------
@@ -237,7 +231,7 @@ void loop() {
   lcd.setCursor(0,1); //col=0 row=0
   lcd.print("Please Wait...");
   //----------------------------------------------------------------
-  // Publish data to Google Sheets
+  // Publish data to Google Sheets (the data is all from the if statement from earlier)
   Serial.println("Publishing data...");
   Serial.println(payload);
   if(client->POST(url, host, payload)){ 
@@ -262,7 +256,6 @@ void loop() {
   // a delay of several seconds is required before publishing again    
   delay(5000);
 }
-
 
 /****************************************************************************************************
  * 
