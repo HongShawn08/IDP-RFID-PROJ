@@ -60,6 +60,7 @@ void loop()
   /* Select one of the cards */
   if ( ! mfrc522.PICC_ReadCardSerial()) {return;}
   //------------------------------------------------------------------------------
+  //Prints desired data within parameters into ASCII format (a format that makes computer language understandable to humans)
   Serial.print("\n");
   Serial.println("**Card Detected**");
   /* Print UID of the Card */
