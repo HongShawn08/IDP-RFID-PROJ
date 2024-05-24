@@ -7,6 +7,7 @@
 const uint8_t RST_PIN = D3;
 const uint8_t SS_PIN = D4;
 //--------------------------------------------------
+//Reciever checks if the unique identifier is valid and also wipes old unique identifier when a new pin is scanned. 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 MFRC522::MIFARE_Key key;        
 //--------------------------------------------------
@@ -89,6 +90,7 @@ void loop()
   ReadDataFromBlock(blockNum, readBlockData);
   dumpSerial(blockNum, readBlockData);
   //MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+  //program will ask user to write out their first name, the program then saves this data.
   Serial.println(F("---------------------------------------"));
   Serial.println(F("Enter First Name, ending with #"));
   len = Serial.readBytesUntil('#', (char *) buffer, 16);
@@ -98,6 +100,7 @@ void loop()
   ReadDataFromBlock(blockNum, readBlockData);
   dumpSerial(blockNum, readBlockData);
   //MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+ //program will ask user to write out their last name, the program then saves this data.
   Serial.println(F("---------------------------------------"));
   Serial.println(F("Enter Last Name, ending with #"));
   len = Serial.readBytesUntil('#', (char *) buffer, 16);
@@ -107,6 +110,7 @@ void loop()
   ReadDataFromBlock(blockNum, readBlockData);
   dumpSerial(blockNum, readBlockData);
   //MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+  //program will ask user to write out their phone number, the program then saves this data.
   Serial.println(F("---------------------------------------"));
   Serial.println(F("Enter Phone Number, ending with #"));
   len = Serial.readBytesUntil('#', (char *) buffer, 16);
@@ -116,6 +120,7 @@ void loop()
   ReadDataFromBlock(blockNum, readBlockData);
   dumpSerial(blockNum, readBlockData);
   Serial.println(F("---------------------------------------"));
+  //program will ask user to write out their address, the program then saves this data.
   Serial.println(F("Enter Address, ending with #"));
   len = Serial.readBytesUntil('#', (char *) buffer, 16);
   for (byte i = len; i < 16; i++) buffer[i] = ' ';
@@ -128,13 +133,13 @@ void loop()
 
 /****************************************************************************************************
  * Writ() function
+ *
  ****************************************************************************************************/
 void WriteDataToBlock(int blockNum, byte blockData[]) 
 {
-   //Serial.print("Writing data on block ");
-   //Serial.println(blockNum);
   //------------------------------------------------------------------------------
   /* Authenticating the desired data block for write access using Key A */
+  //Storing the number of the block and the data inside the block (which comes from the rfid card)
   status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, blockNum, &key, &(mfrc522.uid));
   if (status != MFRC522::STATUS_OK){
     Serial.print("Authentication failed for Write: ");
@@ -143,7 +148,7 @@ void WriteDataToBlock(int blockNum, byte blockData[])
   }
   //------------------------------------------------------------------------------
   else {
-    //Serial.print("Authentication OK - ");
+    //Optional: Serial.print("Authentication OK - ");
   }
   //------------------------------------------------------------------------------
   /* Write data to the block */
@@ -154,17 +159,14 @@ void WriteDataToBlock(int blockNum, byte blockData[])
     return;
   }
   else {
-    //Serial.println("Write OK");
+    //optional: Serial.println("Write OK");
   }
   //------------------------------------------------------------------------------
 }
 
-
-
-
-
 /****************************************************************************************************
  * ReadDataFromBlock() function
+ *Reads data from the node, authenticates it, saves in library
  ****************************************************************************************************/
 void ReadDataFromBlock(int blockNum, byte readBlockData[]) 
 {
@@ -178,15 +180,18 @@ void ReadDataFromBlock(int blockNum, byte readBlockData[])
   }
   //------------------------------------------------------------------------------
   /* Authenticating the desired data block for Read access using Key A */
+  //Allowing user to read block
   status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, blockNum, &key, &(mfrc522.uid));
   //------------------------------------------------------------------------------
+  //if status fails, print on LCD that it failed. Otherwise, print it authentication ok.
   if (status != MFRC522::STATUS_OK){
    Serial.print("Authentication failed for Read: ");
    Serial.println(mfrc522.GetStatusCodeName(status));
    return;
   }
+    //can make this else statement a comment (dont need if buggy)
   else {
-    //Serial.print("Authentication OK - ");
+    Serial.print("Authentication OK - ");
   }
   //------------------------------------------------------------------------------
   /* Reading data from the Block */
@@ -196,18 +201,19 @@ void ReadDataFromBlock(int blockNum, byte readBlockData[])
     Serial.println(mfrc522.GetStatusCodeName(status));
     return;
   }
+    //can make this else statement all comments (dont need if buggy)
   else {
-    //readBlockData[16] = ' ';
-    //readBlockData[17] = ' ';
-    //Serial.println("Read OK");  
+    readBlockData[16] = ' ';
+    readBlockData[17] = ' ';
+    Serial.println("Read OK");  
   }
   //------------------------------------------------------------------------------
 }
 
 
-
 /****************************************************************************************************
  * dumpSerial() function
+ *This function prints out data safved on 'blockNum' to clear memory
  ****************************************************************************************************/
 void dumpSerial(int blockNum, byte blockData[]) 
 {
